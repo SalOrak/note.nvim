@@ -33,10 +33,11 @@ M.note = function(template)
 		end
 
 		local filepath = format_note(vim.uv.cwd() .. "/" .. input)
-		if template and template ~= "" then
+		if template ~= nil then
 			local file_stats = vim.uv.fs_stat(filepath)
 			if not (file_stats ~= nil and file_stats.size ~= 0) then
-				File.writeFile(filepath, template)
+				template = template:setOpts({ title = input })
+				File.writeFile(filepath, template:build())
 			end
 		end
 		local command = ":e " .. filepath
