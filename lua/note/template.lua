@@ -85,4 +85,24 @@ function Template.new(opts)
 	return template
 end
 
+Template.PREBUILT = {
+	FRONT_MATTER_YAML_MARKDOWN = Template.new({
+		enclose = "-",
+		eq = ":",
+	})
+		:withHeader("title", "{title}")
+		:withHeader("date", "{date:%d-%m-%Y}")
+		:withHeader("id", "{uuid}}")
+		:withBody("# {title}"),
+
+	FRONT_MATTER_TOML_MARKDOWN = Template.new({
+		enclose = "+",
+		eq = "=",
+	})
+		:withHeader("title", "{title}")
+		:withHeader("date", "{date:%d-%m-%Y}")
+		:withHeader("id", "{uuid}}")
+		:withBody("# {title}"),
+}
+
 return Template
