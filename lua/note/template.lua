@@ -11,9 +11,11 @@ local default_opts = {
 		title = "",
 		enclose = "-",
 		eq = ":",
+		substitution = {},
 	},
 	_header = "",
 	_body = "",
+	_pattern = "{([^:}]+):?(.-)}",
 	_substitution = {
 		title = function(obj, _)
 			return obj.data.title
@@ -30,13 +32,12 @@ local default_opts = {
 			local id, _ = vim.fn.system("uuidgen"):gsub("\n", "")
 			return id
 		end,
-		pattern = "{([^:}]+):?(.-)}",
 	},
 }
 
 function Template:performSubstitution(value)
 	local result = value
-	local res, d = string.gsub(result, self._substitution.pattern, function(t, data)
+	local res, d = string.gsub(result, self._pattern, function(t, data)
 		if vim.list_contains(vim.tbl_keys(self._substitution), t) then
 			return self._substitution[t](self, data)
 		end
@@ -45,11 +46,10 @@ function Template:performSubstitution(value)
 	return res
 end
 
----@param key string Key parameter to addd
+---@param key string Key parameter to add
 ---@param value string Value parameter to add that has template substitution
 ---@return template Template
 function Template:withHeader(key, value)
-	-- value = self:performSubstitution(value)
 	self._header = string.format("%s\n%s%s %s", self._header, key, self.data.eq, value)
 	return self
 end
@@ -57,7 +57,6 @@ end
 ---@param data string Any text to be sequentially added to the body
 ---@return template Template
 function Template:withBody(data)
-	-- data = self:performSubstitution(data)
 	self._body = string.format("%s\n%s", self._body, data)
 	return self
 end
@@ -66,13 +65,14 @@ end
 ---@return template Template
 function Template:setOpts(opts)
 	self.data = vim.tbl_deep_extend("force", self.data, opts)
+	self._substitution = vim.tbl_deep_extend("keep", self._substitution, opts.substitution)
 	return self
 end
 
 ---@return templateData string The string substituted.
 function Template:build()
 	self._header = string.format("%s\n%s", self._header, string.rep(self.data.enclose, 3, ""))
-	local result = self._header .. "\n" .. self._body
+	local result = string.format("%s\n%s", self._header, self._body)
 	result = self:performSubstitution(result)
 	return result
 end
@@ -80,29 +80,40 @@ end
 ---@param opts {title: string?} options for the template (in Data)
 function Template.new(opts)
 	local data = vim.tbl_deep_extend("force", default_opts.data, opts)
-	local template = setmetatable(default_opts, Template)
+
+	--- Deep copy to make sure we use a fresh instance
+	--- of `default_opts` table.
+	local class_data = vim.deepcopy(default_opts)
+	class_data.data = data
+
+	local template = setmetatable(class_data, Template)
 	template._header = string.rep(template.data.enclose, 3, "")
 	return template
 end
 
-Template.PREBUILT = {
-	FRONT_MATTER_YAML_MARKDOWN = Template.new({
+function Template.generateFrontMatterYamlMarkdown()
+	local t = Template.new({
 		enclose = "-",
 		eq = ":",
 	})
-		:withHeader("title", "{title}")
+
+	t = t:withHeader("title", "{title}")
 		:withHeader("date", "{date:%d-%m-%Y}")
 		:withHeader("id", "{uuid}}")
-		:withBody("# {title}"),
+		:withBody("# {title}")
+	return t
+end
 
-	FRONT_MATTER_TOML_MARKDOWN = Template.new({
+function Template.generateFrontMatterTomlMarkdown()
+	local t = Template.new({
 		enclose = "+",
 		eq = "=",
 	})
-		:withHeader("title", "{title}")
+	t:withHeader("title", "{title}")
 		:withHeader("date", "{date:%d-%m-%Y}")
 		:withHeader("id", "{uuid}}")
-		:withBody("# {title}"),
-}
+		:withBody("# {title}")
+	return t
+end
 
 return Template
