@@ -64,8 +64,8 @@ end
 ---@param opts {title: string?}
 ---@return template Template
 function Template:setOpts(opts)
-	self.data = vim.tbl_deep_extend("force", self.data, opts)
-	self._substitution = vim.tbl_deep_extend("keep", self._substitution, opts.substitution)
+	self.data = vim.tbl_deep_extend("force", self.data, opts or {})
+	self._substitution = vim.tbl_deep_extend("keep", self._substitution, opts.substitution or {})
 	return self
 end
 
@@ -91,29 +91,17 @@ function Template.new(opts)
 	return template
 end
 
-function Template.generateFrontMatterYamlMarkdown()
-	local t = Template.new({
-		enclose = "-",
-		eq = ":",
-	})
-
-	t = t:withHeader("title", "{title}")
+Template.PRESET = {
+	frontMatterTomlMarkdown = Template.new({ enclose = "+", eq = "=" })
+		:withHeader("title", "{title}")
 		:withHeader("date", "{date:%d-%m-%Y}")
 		:withHeader("id", "{uuid}}")
-		:withBody("# {title}")
-	return t
-end
-
-function Template.generateFrontMatterTomlMarkdown()
-	local t = Template.new({
-		enclose = "+",
-		eq = "=",
-	})
-	t:withHeader("title", "{title}")
+		:withBody("# {title}"),
+	frontMatterYamlMarkdown = Template.new({ enclose = "-", eq = ":" })
+		:withHeader("title", "{title}")
 		:withHeader("date", "{date:%d-%m-%Y}")
 		:withHeader("id", "{uuid}}")
-		:withBody("# {title}")
-	return t
-end
+		:withBody("# {title}"),
+}
 
 return Template

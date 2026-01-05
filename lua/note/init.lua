@@ -25,14 +25,15 @@ end
 ---@param template Template? The template to use when creating the note. Use the helper Template class.
 M.note = function(template)
 	local cwd = vim.uv.cwd()
-	vim.uv.chdir(M.path)
+	local dirpath = vim.fs.abspath(M.path)
+	vim.uv.chdir(dirpath)
 	vim.ui.input({ prompt = "New note: ", completion = "file_in_path" }, function(input)
 		if input == nil or input == "" then
 			Logger:info("No new created")
 			return
 		end
 
-		local filepath = format_note(vim.uv.cwd() .. "/" .. input)
+		local filepath = format_note(dirpath .. "/" .. input)
 		if template ~= nil then
 			local file_stats = vim.uv.fs_stat(filepath)
 			if not (file_stats ~= nil and file_stats.size ~= 0) then
